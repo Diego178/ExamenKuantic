@@ -15,7 +15,7 @@ class Movie(Document):
     actors: List[str] = Field(default_factory=list)
 
     class Settings:
-        name = "movies"
+        name = "collection_movies"
         indexes = [
             "director",
             [("year", ASCENDING)]

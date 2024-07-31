@@ -8,6 +8,7 @@ import os
 from dotenv import load_dotenv
 import bcrypt
 from connection.connection import collection_users
+from logging_config.logging import logger
 load_dotenv()
 
 SECRET_KEY = os.getenv('SECRET_KEY')
@@ -34,8 +35,10 @@ async def authenticate_user(email: str, password: str):
         if check_password(password, user['password']):
             return user
         else: 
+            logger.exception(f"Credentials invalids", exc_info=True)
             raise exception('Credentials invalids', status.HTTP_401_UNAUTHORIZED, True)
     else: 
+        logger.exception(f"Credentials invalids", exc_info=True)
         raise exception('Credentials invalids', status.HTTP_401_UNAUTHORIZED, True)    
     
 
@@ -44,6 +47,7 @@ async def get_current_user(token: str = Depends(outh2_schema), *rols):
         payload = jwt.decode(token, SECRET_KEY, ALGORITHM)
         expiration = datetime.fromtimestamp(payload['exp'])
         if expiration < datetime.now():
+            logger.exception("Session expired")
             raise exception('Session expired', status.HTTP_401_UNAUTHORIZED, True)
         user_id = payload.get('id')
         type = payload.get('type')
@@ -52,10 +56,14 @@ async def get_current_user(token: str = Depends(outh2_schema), *rols):
             if user is not None:
                 return user
             else:
+                logger.exception("User dont found")
                 raise exception('User dont found', status.HTTP_401_UNAUTHORIZED, True)
         else:
+            name = dict(user).get('name')
+            logger.exception("User {name} do not have permissions to access the recource")
             raise exception('You do not have permissions to access this resource', status.HTTP_401_UNAUTHORIZED, True)
     except JWTError as e:
+        logger.exception('JWT error: ' + str(e))
         raise exception('JWT error: ' + str(e), status.HTTP_401_UNAUTHORIZED, True)
     
 async def get_user(token: str = Depends(outh2_schema)):
